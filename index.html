@@ -148,19 +148,85 @@
             document.getElementById('game-container').style.display = 'block';
             backgroundMusic.play();
             setupNumberPad();
+            currentLevel = 1;
+            correctAnswerCount = 0;
             generateQuestion();
         }
 
         function generateQuestion() {
-            // ... (rest of the generateQuestion function remains the same)
+            let num1, num2, operator;
+            const difficulty = Math.min(Math.floor((currentLevel - 1) / 5) + 1, 4);
+
+            do {
+                switch(difficulty) {
+                    case 1:
+                        num1 = Math.floor(Math.random() * 10) + 1;
+                        num2 = Math.floor(Math.random() * 10) + 1;
+                        operator = ['+', '-'][Math.floor(Math.random() * 2)];
+                        break;
+                    case 2:
+                        num1 = Math.floor(Math.random() * 50) + 1;
+                        num2 = Math.floor(Math.random() * 50) + 1;
+                        operator = ['+', '-'][Math.floor(Math.random() * 2)];
+                        break;
+                    case 3:
+                        num1 = Math.floor(Math.random() * 100) + 1;
+                        num2 = Math.floor(Math.random() * 100) + 1;
+                        operator = ['+', '-'][Math.floor(Math.random() * 2)];
+                        break;
+                    case 4:
+                        if (currentLevel >= 20) {
+                            num1 = Math.floor(Math.random() * 90) + 10;
+                            num2 = Math.floor(Math.random() * 90) + 10;
+                            operator = ['+', '-', '*', '/'][Math.floor(Math.random() * 4)];
+                            if (operator === '/') {
+                                num1 = num2 * (Math.floor(Math.random() * 9) + 1);
+                            }
+                        } else {
+                            num1 = Math.floor(Math.random() * 500) + 1;
+                            num2 = Math.floor(Math.random() * 500) + 1;
+                            operator = ['+', '-'][Math.floor(Math.random() * 2)];
+                        }
+                        break;
+                }
+            } while (!isValidQuestion(num1, num2, operator));
+
+            currentQuestion = {num1, num2, operator};
+            document.getElementById('question').textContent = `${num1} ${operator} ${num2} = ?`;
+            document.getElementById('level').textContent = `Level: ${currentLevel}`;
+            resetTimer();
+            currentAnswer = "";
+            updateAnswerText();
         }
 
         function isValidQuestion(num1, num2, operator) {
-            // ... (rest of the isValidQuestion function remains the same)
+            let result;
+            switch (operator) {
+                case '+': result = num1 + num2; break;
+                case '-': result = num1 - num2; break;
+                case '*': result = num1 * num2; break;
+                case '/': result = num1 / num2; break;
+            }
+            return result >= 0 && result < 1000 && Number.isInteger(result);
         }
 
         function resetTimer() {
-            // ... (rest of the resetTimer function remains the same)
+            clearInterval(timerInterval);
+            if ((currentLevel - 1) % 5 === 0) {
+                maxTime = 20;
+            } else {
+                maxTime = Math.max(10, maxTime - 2);
+            }
+            timeLeft = maxTime;
+            updateTimerDisplay();
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    gameOver("Time's up!");
+                }
+            }, 1000);
         }
 
         function updateTimerDisplay() {
