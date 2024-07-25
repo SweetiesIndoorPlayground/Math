@@ -114,19 +114,6 @@
         <div id="number-pad"></div>
     </div>
 
-    <audio id="background-music" loop>
-        <source src="path_to_background_music.mp3" type="audio/mpeg">
-    </audio>
-    <audio id="success-sound">
-        <source src="path_to_success_sound.mp3" type="audio/mpeg">
-    </audio>
-    <audio id="failure-sound">
-        <source src="path_to_failure_sound.mp3" type="audio/mpeg">
-    </audio>
-    <audio id="click-sound">
-        <source src="path_to_click_sound.mp3" type="audio/mpeg">
-    </audio>
-
     <script>
         let currentLevel = 1;
         let currentQuestion;
@@ -136,17 +123,46 @@
         let maxTime = 20;
         let correctAnswerCount = 0;
         
-        const backgroundMusic = document.getElementById('background-music');
-        const successSound = document.getElementById('success-sound');
-        const failureSound = document.getElementById('failure-sound');
-        const clickSound = document.getElementById('click-sound');
-        
+        let audioContext;
+        let backgroundMusicBuffer;
+        let successSoundBuffer;
+        let failureSoundBuffer;
+        let clickSoundBuffer;
+
         document.getElementById('start-button').addEventListener('click', startGame);
+
+        // Initialize Web Audio API
+        function initAudio() {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            loadSound('path_to_background_music.mp3', buffer => backgroundMusicBuffer = buffer);
+            loadSound('path_to_success_sound.mp3', buffer => successSoundBuffer = buffer);
+            loadSound('path_to_failure_sound.mp3', buffer => failureSoundBuffer = buffer);
+            loadSound('path_to_click_sound.mp3', buffer => clickSoundBuffer = buffer);
+        }
+
+        function loadSound(url, callback) {
+            fetch(url)
+                .then(response => response.arrayBuffer())
+                .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+                .then(audioBuffer => callback(audioBuffer));
+        }
+
+        function playSound(buffer, loop = false) {
+            const source = audioContext.createBufferSource();
+            source.buffer = buffer;
+            source.connect(audioContext.destination);
+            source.loop = loop;
+            source.start();
+            return source;
+        }
 
         function startGame() {
             document.getElementById('start-screen').style.display = 'none';
             document.getElementById('game-container').style.display = 'block';
-            backgroundMusic.play();
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+            playSound(backgroundMusicBuffer, true);
             setupNumberPad();
             currentLevel = 1;
             correctAnswerCount = 0;
@@ -234,7 +250,7 @@
         }
 
         function onNumberClick(number) {
-            clickSound.play();
+            playSound(clickSoundBuffer);
             currentAnswer += number;
             updateAnswerText();
             showMiniLogo(event);
@@ -245,14 +261,14 @@
         }
 
         function onDeleteClick() {
-            clickSound.play();
+            playSound(clickSoundBuffer);
             currentAnswer = currentAnswer.slice(0, -1);
             updateAnswerText();
             showMiniLogo(event);
         }
 
         function onSubmit() {
-            clickSound.play();
+            playSound(clickSoundBuffer);
             let correctAnswer;
             switch (currentQuestion.operator) {
                 case '+': correctAnswer = currentQuestion.num1 + currentQuestion.num2; break;
@@ -264,7 +280,7 @@
             if (parseInt(currentAnswer) === correctAnswer) {
                 correctAnswerCount++;
                 currentLevel++;
-                successSound.play();
+                playSound(successSoundBuffer);
                 alert("Correct!");
                 currentAnswer = "";
                 updateAnswerText();
@@ -277,7 +293,7 @@
 
         function gameOver(message) {
             clearInterval(timerInterval);
-            failureSound.play();
+            playSound(failureSoundBuffer);
             alert(`${message} Game Over! You reached level ${currentLevel} and answered ${correctAnswerCount} questions correctly.`);
             currentLevel = 1;
             correctAnswerCount = 0;
@@ -286,8 +302,6 @@
             updateAnswerText();
             document.getElementById('start-screen').style.display = 'flex';
             document.getElementById('game-container').style.display = 'none';
-            backgroundMusic.pause();
-            backgroundMusic.currentTime = 0;
         }
 
         function setupNumberPad() {
@@ -304,12 +318,12 @@
                 button.textContent = label;
                 if (label === 'Delete') {
                     button.id = 'delete';
-                    button.onclick = onDeleteClick;
+                    button.ontouchstart = onDeleteClick;
                 } else if (label === 'Submit') {
                     button.id = 'submit';
-                    button.onclick = onSubmit;
+                    button.ontouchstart = onSubmit;
                 } else {
-                    button.onclick = () => onNumberClick(label);
+                    button.ontouchstart = () => onNumberClick(label);
                 }
                 numberPad.appendChild(button);
             });
@@ -342,6 +356,9 @@
             }
             lastTouchEnd = now;
         }, false);
+
+        // Initialize audio when the page loads
+        window.addEventListener('load', initAudio);
     </script>
 </body>
 </html>
