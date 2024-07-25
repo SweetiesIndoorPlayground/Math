@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Math Learning Game</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f0f0;
+            touch-action: manipulation;
+        }
+        #game-container {
+            width: 90%;
+            max-width: 400px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            text-align: center;
+        }
+        #question, #level, #timer {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        #answer {
+            font-size: 20px;
+            margin-bottom: 20px;
+            min-height: 30px;
+            word-wrap: break-word;
+        }
+        #number-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        button {
+            font-size: 24px;
+            padding: 15px;
+            border: none;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        button:active {
+            background-color: #d0d0d0;
+        }
+        #delete, #submit {
+            font-size: 18px;
+        }
+        #delete {
+            background-color: #f44336;
+            color: white;
+        }
+        #submit {
+            background-color: #4CAF50;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="level"></div>
+        <div id="timer"></div>
+        <div id="question"></div>
+        <div id="answer"></div>
+        <div id="number-pad"></div>
+    </div>
+    <script>
+        let currentLevel = 1;
+        let currentQuestion;
+        let currentAnswer = "";
+        let timerInterval;
+        let timeLeft = 20;
+        let maxTime = 20;
+        let correctAnswerCount = 0;
+
+        function generateQuestion() {
+            let num1, num2, operator;
+            const difficulty = Math.min(Math.floor((currentLevel - 1) / 5) + 1, 4);
+
+            do {
+                switch(difficulty) {
+                    case 1:
+                        num1 = Math.floor(Math.random() * 10) + 1;
+                        num2 = Math.floor(Math.random() * 10) + 1;
+                        operator = ['+', '-'][Math.floor(Math.random() * 2)];
+                        break;
+                    case 2:
+                        num1 = Math.floor(Math.random() * 50) + 1;
+                        num2 = Math.floor(Math.random() * 50) + 1;
+                        operator = ['+', '-'][Math.floor(Math.random() * 2)];
+                        break;
+                    case 3:
+                        num1 = Math.floor(Math.random() * 100) + 1;
+                        num2 = Math.floor(Math.random() * 100) + 1;
+                        operator = ['+', '-'][Math.floor(Math.random() * 2)];
+                        break;
+                    case 4:
+                        if (currentLevel >= 20) {
+                            num1 = Math.floor(Math.random() * 90) + 10;
+                            num2 = Math.floor(Math.random() * 90) + 10;
+                            operator = ['+', '-', '*', '/'][Math.floor(Math.random() * 4)];
+                            if (operator === '/') {
+                                num1 = num2 * (Math.floor(Math.random() * 9) + 1);
+                            }
+                        } else {
+                            num1 = Math.floor(Math.random() * 500) + 1;
+                            num2 = Math.floor(Math.random() * 500) + 1;
+                            operator = ['+', '-'][Math.floor(Math.random() * 2)];
+                        }
+                        break;
+                }
+            } while (!isValidQuestion(num1, num2, operator));
+
+            currentQuestion = {num1, num2, operator};
+            document.getElementById('question').textContent = `${num1} ${operator} ${num2} = ?`;
+            document.getElementById('level').textContent = `Level: ${currentLevel}`;
+            resetTimer();
+        }
+
+        function isValidQuestion(num1, num2, operator) {
+            let result;
+            switch (operator) {
+                case '+': result = num1 + num2; break;
+                case '-': result = num1 - num2; break;
+                case '*': result = num1 * num2; break;
+                case '/': result = num1 / num2; break;
+            }
+            return result >= 0 && result < 1000 && Number.isInteger(result);
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            if ((currentLevel - 1) % 5 === 0) {
+                maxTime = 20;
+            } else {
+                maxTime = Math.max(10, maxTime - 2);
+            }
+            timeLeft = maxTime;
+            updateTimerDisplay();
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    gameOver("Time's up!");
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            document.getElementById('timer').textContent = `Time left: ${timeLeft}s`;
+        }
+
+        function onNumberClick(number) {
+            currentAnswer += number;
+            updateAnswerText();
+        }
+
+        function updateAnswerText() {
+            document.getElementById('answer').textContent = currentAnswer;
+        }
+
+        function onDeleteClick() {
+            currentAnswer = currentAnswer.slice(0, -1);
+            updateAnswerText();
+        }
+
+        function onSubmit() {
+            let correctAnswer;
+            switch (currentQuestion.operator) {
+                case '+': correctAnswer = currentQuestion.num1 + currentQuestion.num2; break;
+                case '-': correctAnswer = currentQuestion.num1 - currentQuestion.num2; break;
+                case '*': correctAnswer = currentQuestion.num1 * currentQuestion.num2; break;
+                case '/': correctAnswer = currentQuestion.num1 / currentQuestion.num2; break;
+            }
+
+            if (parseInt(currentAnswer) === correctAnswer) {
+                correctAnswerCount++;
+                currentLevel++;
+                alert("Correct!");
+                currentAnswer = "";
+                updateAnswerText();
+                generateQuestion();
+            } else {
+                gameOver(`Incorrect. The correct answer was ${correctAnswer}.`);
+            }
+        }
+
+        function gameOver(message) {
+            clearInterval(timerInterval);
+            alert(`${message} Game Over! You reached level ${currentLevel} and answered ${correctAnswerCount} questions correctly.`);
+            currentLevel = 1;
+            correctAnswerCount = 0;
+            maxTime = 20;
+            currentAnswer = "";
+            updateAnswerText();
+            generateQuestion();
+        }
+
+        function setupNumberPad() {
+            const numberPad = document.getElementById('number-pad');
+            numberPad.innerHTML = '';
+            const buttonLayout = [
+                '1', '2', '3',
+                '4', '5', '6',
+                '7', '8', '9',
+                'Delete', '0', 'Submit'
+            ];
+            buttonLayout.forEach(label => {
+                const button = document.createElement('button');
+                button.textContent = label;
+                if (label === 'Delete') {
+                    button.id = 'delete';
+                    button.onclick = onDeleteClick;
+                } else if (label === 'Submit') {
+                    button.id = 'submit';
+                    button.onclick = onSubmit;
+                } else {
+                    button.onclick = () => onNumberClick(label);
+                }
+                numberPad.appendChild(button);
+            });
+        }
+
+        setupNumberPad();
+        generateQuestion();
+
+        // Prevent zooming on double tap
+        document.addEventListener('touchstart', function(event) {
+            if (event.touches.length > 1) {
+                event.preventDefault();
+            }
+        }, { passive: false });
+
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(event) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+    </script>
+</body>
+</html>
