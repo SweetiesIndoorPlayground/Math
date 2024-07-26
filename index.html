@@ -257,7 +257,6 @@
             playSound(clickSoundBuffer);
             currentAnswer += number;
             updateAnswerText();
-            showMiniLogo(event);
         }
 
         function updateAnswerText() {
@@ -268,7 +267,6 @@
             playSound(clickSoundBuffer);
             currentAnswer = currentAnswer.slice(0, -1);
             updateAnswerText();
-            showMiniLogo(event);
         }
 
         function onSubmit() {
@@ -292,7 +290,6 @@
             } else {
                 gameOver(`Incorrect. The correct answer was ${correctAnswer}.`);
             }
-            showMiniLogo(event);
         }
 
         function gameOver(message) {
@@ -322,12 +319,21 @@
                 button.textContent = label;
                 if (label === 'Delete') {
                     button.id = 'delete';
-                    button.ontouchstart = onDeleteClick;
+                    button.ontouchstart = (event) => {
+                        onDeleteClick();
+                        showMiniLogo(event);
+                    };
                 } else if (label === 'Submit') {
                     button.id = 'submit';
-                    button.ontouchstart = onSubmit;
+                    button.ontouchstart = (event) => {
+                        onSubmit();
+                        showMiniLogo(event);
+                    };
                 } else {
-                    button.ontouchstart = () => onNumberClick(label);
+                    button.ontouchstart = (event) => {
+                        onNumberClick(label);
+                        showMiniLogo(event);
+                    };
                 }
                 numberPad.appendChild(button);
             });
@@ -337,8 +343,13 @@
             const miniLogo = document.createElement('img');
             miniLogo.src = 'path_to_your_mini_logo.png';
             miniLogo.classList.add('mini-logo');
-            miniLogo.style.left = `${event.clientX - 10}px`;
-            miniLogo.style.top = `${event.clientY - 10}px`;
+            
+            const touch = event.touches[0] || event.changedTouches[0];
+            const x = touch.clientX;
+            const y = touch.clientY;
+            
+            miniLogo.style.left = `${x - 10}px`;
+            miniLogo.style.top = `${y - 10}px`;
             document.body.appendChild(miniLogo);
             setTimeout(() => {
                 miniLogo.remove();
